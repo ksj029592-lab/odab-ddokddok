@@ -1,0 +1,11 @@
+{
+  "name": "odab-ddokddok-azd",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "powershell -ExecutionPolicy Bypass -File ./scripts/azd-prepackage.ps1"
+  },
+  "devDependencies": {
+    "@azure/static-web-apps-cli": "^2.0.9"
+  }
+}

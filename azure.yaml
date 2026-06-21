@@ -1,0 +1,22 @@
+name: odab-ddokddok
+metadata:
+  template: local-flutter-swa@0.0.1
+
+infra:
+  provider: bicep
+  path: infra
+
+services:
+  web:
+    project: .
+    host: staticwebapp
+    language: js
+    dist: build/web
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          run: ./scripts/azd-prepackage.ps1
+        posix:
+          shell: sh
+          run: ./scripts/azd-prepackage.sh

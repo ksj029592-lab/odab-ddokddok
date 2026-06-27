@@ -21,4 +21,4 @@ services:
           run: ./scripts/azd-prepackage.ps1
         posix:
           shell: sh
-          run: ./scripts/azd-prepackage.sh
+          run: sh ./scripts/azd-prepackage.sh

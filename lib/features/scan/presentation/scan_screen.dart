@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:odab_ddokddok/core/services/image/perspective_corrector.dart';
 import 'package:odab_ddokddok/features/scan/application/gallery_image_picker_service.dart';
 import 'package:odab_ddokddok/features/scan/presentation/widgets/manual_crop_editor.dart';
@@ -61,6 +63,73 @@ class _ScanScreenState extends State<ScanScreen> {
       _cropPoints = CropPoints.initial();
       _quarterTurns = 0;
     });
+  }
+
+  Future<void> _captureFromCamera() async {
+    if (kIsWeb) {
+      setState(() {
+        _statusMessage = '웹 환경에서는 카메라 촬영이 지원되지 않습니다';
+      });
+      return;
+    }
+
+    // 카메라 권한 요청
+    final PermissionStatus status = await Permission.camera.request();
+
+    if (!mounted) {
+      return;
+    }
+
+    if (status.isDenied) {
+      setState(() {
+        _statusMessage = '카메라 권한이 거부되었습니다';
+      });
+      return;
+    }
+
+    if (status.isPermanentlyDenied) {
+      setState(() {
+        _statusMessage = '카메라 권한이 영구적으로 거부되었습니다. 설정에서 허용해주세요';
+      });
+      openAppSettings();
+      return;
+    }
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(source: ImageSource.camera);
+
+      if (photo == null) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _statusMessage = '촬영이 취소되었습니다';
+        });
+        return;
+      }
+
+      final Uint8List imageBytes = await photo.readAsBytes();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedImagePath = photo.path;
+        _selectedImageBytes = imageBytes;
+        _statusMessage = null;
+        _cropPoints = CropPoints.initial();
+        _quarterTurns = 0;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _statusMessage = '카메라 촬영 중 오류가 발생했습니다';
+      });
+    }
   }
 
   Future<void> _applyPerspectiveCorrection() async {
@@ -150,21 +219,12 @@ class _ScanScreenState extends State<ScanScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('스캔'),
-        automaticallyImplyLeading: false,
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            tooltip: '메인으로 돌아가기',
-            onPressed: () => context.go('/'),
-          ),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'scan-go-home-fab',
-        onPressed: () => context.go('/'),
-        icon: const Icon(Icons.home_outlined),
-        label: const Text('메인'),
+        automaticallyImplyLeading: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: '메인으로 돌아가기',
+          onPressed: () => context.go('/'),
+        ),
       ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -195,16 +255,34 @@ class _ScanScreenState extends State<ScanScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => context.go('/'),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  label: const Text('메인으로 돌아가기'),
-                ),
-              ),
               const SizedBox(height: 16),
+              if (kIsWeb)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF93C5FD)),
+                  ),
+                  child: const Text(
+                    'ℹ️ 웹 환경에서는 촬영이 지원되지 않습니다. 갤러리에서 선택해주세요.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF1E40AF),
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _captureFromCamera,
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    label: const Text('카메라로 촬영'),
+                  ),
+                ),
+              const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -257,20 +335,25 @@ class _ScanScreenState extends State<ScanScreen> {
                                   key: const Key('selected-image-path'),
                                 ),
                                 const SizedBox(height: 12),
-                                ManualCropEditor(
-                                  points: _cropPoints,
-                                  onPointsChanged: (CropPoints next) {
-                                    setState(() {
-                                      _cropPoints = next;
-                                    });
-                                  },
-                                  quarterTurns: _quarterTurns,
-                                  onRotate: () {
-                                    setState(() {
-                                      _quarterTurns = (_quarterTurns + 1) % 4;
-                                    });
-                                  },
-                                  background: previewImage,
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 400,
+                                  ),
+                                  child: ManualCropEditor(
+                                    points: _cropPoints,
+                                    onPointsChanged: (CropPoints next) {
+                                      setState(() {
+                                        _cropPoints = next;
+                                      });
+                                    },
+                                    quarterTurns: _quarterTurns,
+                                    onRotate: () {
+                                      setState(() {
+                                        _quarterTurns = (_quarterTurns + 1) % 4;
+                                      });
+                                    },
+                                    background: previewImage,
+                                  ),
                                 ),
                               ],
                             ),

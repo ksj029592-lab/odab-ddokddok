@@ -5,6 +5,8 @@ metadata:
 infra:
   provider: bicep
   path: infra
+  parameters:
+    environmentName: "${AZURE_ENV_NAME}"
 
 services:
   web:

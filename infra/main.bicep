@@ -1,14 +1,14 @@
 targetScope = 'subscription'
 
 @description('Name of the azd environment (for example: dev, test, prod).')
-param environmentName string
+param environmentName string = 'dev'
 
 @description('Azure region for all resources.')
 param location string = deployment().location
 
 var resourceToken = uniqueString(subscription().id, environmentName, location)
 var resourceGroupName = 'rg-${environmentName}'
-var staticWebAppName = toLower('swa-${take(environmentName, 20)}-${take(resourceToken, 6)}')
+var staticWebAppName = 'swa-oodapnotes-fwvanl'
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: resourceGroupName

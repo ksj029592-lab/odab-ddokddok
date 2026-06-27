@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>문제를 촬영하기 위해 카메라 접근이 필요합니다</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>갤러리에서 문제 사진을 선택하기 위해 접근이 필요합니다</string>
 </dict>
 </plist>

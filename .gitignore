@@ -9,6 +9,9 @@ build/
 # IDE
 .idea/
 .vscode/*.code-workspace
+*.iml
+.metadata
+.copilot/
 
 # OS
 .DS_Store
